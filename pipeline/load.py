@@ -184,7 +184,9 @@ def upsert(conn: Connection, table: Table, rows: Sequence[dict[str, Any]]) -> in
             set_=updatable,
             where=table.c.updated_at <= stmt.excluded.updated_at,
         )
-        written += conn.execute(stmt).rowcount
+        # Count via RETURNING rather than rowcount: psycopg reports -1 for
+        # this statement, and RETURNING omits rows skipped by the WHERE guard.
+        written += len(conn.execute(stmt.returning(table.c.id)).all())
     return written
 
 

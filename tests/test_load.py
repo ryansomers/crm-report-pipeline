@@ -144,3 +144,13 @@ def test_postgres_upsert_is_idempotent(make_client, pg_engine):
     run_pipeline(pg_engine, client, full_refresh=True)
     assert snapshot(pg_engine, deals) == before
     assert len(before) == len(store.records["deals"])
+
+
+@pytest.mark.integration
+def test_postgres_upsert_counts_written_rows(pg_engine):
+    newer = _deal("negotiation", "2026-11-05T00:00:00Z")
+    older = _deal("proposal", "2026-11-03T00:00:00Z")
+    with pg_engine.begin() as conn:
+        assert upsert(conn, deals, [_row(newer)]) == 1
+        assert upsert(conn, deals, [_row(older)]) == 0
+        assert upsert(conn, deals, [_row(newer)]) == 1
