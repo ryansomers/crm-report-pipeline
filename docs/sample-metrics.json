@@ -1,0 +1,138 @@
+{
+  "week_start": "2026-11-02",
+  "week_end": "2026-11-08",
+  "currency": "USD",
+  "new_deals": {
+    "count": 35,
+    "value": 572570.96
+  },
+  "closed": {
+    "won_count": 21,
+    "won_value": 435747.83,
+    "lost_count": 27,
+    "lost_value": 461026.84,
+    "win_rate_pct": 43.8
+  },
+  "open_pipeline": {
+    "deal_count": 120,
+    "value": 2453525.8,
+    "by_stage": [
+      {
+        "stage": "prospecting",
+        "deal_count": 36,
+        "value": 780990.58
+      },
+      {
+        "stage": "qualification",
+        "deal_count": 24,
+        "value": 378332.48
+      },
+      {
+        "stage": "proposal",
+        "deal_count": 18,
+        "value": 401685.62
+      },
+      {
+        "stage": "negotiation",
+        "deal_count": 42,
+        "value": 892517.12
+      }
+    ]
+  },
+  "top_owners": [
+    {
+      "rank": 1,
+      "owner": "Connie Lawrence",
+      "won_count": 9,
+      "won_value": 191433.12
+    },
+    {
+      "rank": 2,
+      "owner": "Cristian Santos",
+      "won_count": 3,
+      "won_value": 103346.57
+    },
+    {
+      "rank": 3,
+      "owner": "Daniel Wagner",
+      "won_count": 5,
+      "won_value": 81386.91
+    }
+  ],
+  "week_over_week": {
+    "new_deals": {
+      "current": 35,
+      "previous": 31,
+      "delta": 4,
+      "delta_pct": 12.9
+    },
+    "new_value": {
+      "current": 572570.96,
+      "previous": 704037.64,
+      "delta": -131466.68,
+      "delta_pct": -18.7
+    },
+    "won_count": {
+      "current": 21,
+      "previous": 16,
+      "delta": 5,
+      "delta_pct": 31.2
+    },
+    "won_value": {
+      "current": 435747.83,
+      "previous": 350863.25,
+      "delta": 84884.58,
+      "delta_pct": 24.2
+    },
+    "lost_count": {
+      "current": 27,
+      "previous": 12,
+      "delta": 15,
+      "delta_pct": 125.0
+    }
+  },
+  "weekly_trend": [
+    {
+      "week_start": "2026-09-28",
+      "new_deals": 38,
+      "won_count": 8,
+      "won_value": 143232.68,
+      "lost_count": 7
+    },
+    {
+      "week_start": "2026-10-05",
+      "new_deals": 27,
+      "won_count": 13,
+      "won_value": 219066.53,
+      "lost_count": 12
+    },
+    {
+      "week_start": "2026-10-12",
+      "new_deals": 34,
+      "won_count": 4,
+      "won_value": 39122.78,
+      "lost_count": 21
+    },
+    {
+      "week_start": "2026-10-19",
+      "new_deals": 26,
+      "won_count": 11,
+      "won_value": 190296.47,
+      "lost_count": 14
+    },
+    {
+      "week_start": "2026-10-26",
+      "new_deals": 31,
+      "won_count": 16,
+      "won_value": 350863.25,
+      "lost_count": 12
+    },
+    {
+      "week_start": "2026-11-02",
+      "new_deals": 35,
+      "won_count": 21,
+      "won_value": 435747.83,
+      "lost_count": 27
+    }
+  ]
+}
