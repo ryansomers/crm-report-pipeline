@@ -43,3 +43,22 @@ def make_client(sleeps: SleepRecorder) -> Callable[..., tuple[CRMClient, CRMStor
 
     return _make
 
+
+
+@pytest.fixture
+def pg_engine():
+    """A clean PostgreSQL schema, only for tests marked `integration`."""
+    import os
+
+    from sqlalchemy import create_engine
+
+    from pipeline.load import metadata
+
+    url = os.environ.get("TEST_PG_URL")
+    if not url:
+        pytest.skip("TEST_PG_URL not set")
+    eng = create_engine(url)
+    metadata.drop_all(eng)
+    metadata.create_all(eng)
+    yield eng
+    eng.dispose()
