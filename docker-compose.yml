@@ -1,0 +1,52 @@
+# Full local stack: PostgreSQL 16, the mock CRM, and the pipeline as a one-off job.
+#   docker compose up -d db mock-crm
+#   docker compose run --rm pipeline run
+#   docker compose run --rm pipeline report --week 2026-11-02 --no-llm
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+      POSTGRES_DB: crm
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mock-crm:
+    build: .
+    # Injected failures keep the retry and reject paths honest in the demo.
+    command: ["serve-mock", "--host", "0.0.0.0", "--port", "8000",
+              "--rate-limit-every", "7", "--fail-every", "11", "--corrupt-rate", "0.02"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  pipeline:
+    build: .
+    profiles: ["jobs"]  # not started by `up`; run on demand
+    environment:
+      DATABASE_URL: postgresql+psycopg://crm:crm@db:5432/crm
+      CRM_BASE_URL: http://mock-crm:8000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+    volumes:
+      - ./reports:/app/reports
+    depends_on:
+      db:
+        condition: service_healthy
+      mock-crm:
+        condition: service_healthy
+
+volumes:
+  pgdata:
