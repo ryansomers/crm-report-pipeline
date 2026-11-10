@@ -51,7 +51,7 @@ def build_tables(m: dict[str, Any]) -> list[Table]:
         ]
     ]
     win_rate = m["closed"]["win_rate_pct"]
-    kpi_rows.append(["Win rate", "n/a" if win_rate is None else f"{win_rate}%", "", ""])
+    kpi_rows.append(["Win rate", "n/a" if win_rate is None else f"{win_rate}%", "n/a", "n/a"])
     pipeline = m["open_pipeline"]
     return [
         Table("Key metrics", ["Metric", "This week", "Last week", "Change"], kpi_rows),
