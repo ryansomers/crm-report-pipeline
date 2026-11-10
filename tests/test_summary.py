@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+import anthropic
+import httpx2  # the HTTP library anthropic>=2 is built on
 import pytest
 from sqlalchemy import create_engine
 
@@ -152,3 +154,48 @@ def test_report_files_written(metrics, tmp_path):
     page = paths["html"].read_text()
     assert "<table>" in page and "Figure check: passed" in page
     assert json.loads(paths["metrics"].read_text()) == metrics
+
+
+def test_api_error_falls_back_to_template(metrics):
+    def boom(**kwargs):
+        raise anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.test"))
+
+    fake = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(parse=boom)))
+    outcome = generate_summary(AnthropicSummarizer(client=fake, model="m"), metrics)
+    assert outcome.source == "template"
+    assert any("APIConnectionError" in n for n in outcome.notes)
+
+
+def test_real_sdk_request_shape_without_network(metrics):
+    """Drive the real Anthropic SDK against a mock HTTP transport.
+
+    Checks the wire request (structured-output schema, effort, fallbacks beta)
+    and that the SDK parses a canned response into WeeklySummary. No network,
+    no key, no cost.
+    """
+    captured = {}
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        captured["body"] = json.loads(request.content)
+        captured["beta"] = request.headers.get("anthropic-beta", "")
+        return httpx2.Response(200, json={
+            "id": "msg_test", "type": "message", "role": "assistant", "model": "m",
+            "content": [{"type": "text", "text": GOOD.model_dump_json()}],
+            "stop_reason": "end_turn", "stop_sequence": None,
+            "usage": {"input_tokens": 10, "output_tokens": 10},
+        })
+
+    client = anthropic.Anthropic(
+        api_key="test-key", http_client=httpx2.Client(transport=httpx2.MockTransport(handler))
+    )
+    outcome = generate_summary(AnthropicSummarizer(client=client, model="m"), metrics)
+
+    assert outcome.source == "llm:m" and outcome.summary == GOOD
+    body = captured["body"]
+    assert body["output_config"]["effort"] == "low"
+    assert body["output_config"]["format"]["type"] == "json_schema"
+    assert set(body["output_config"]["format"]["schema"]["properties"]) == {
+        "headline", "highlights", "watch_items"
+    }
+    assert body["fallbacks"] == "default"
+    assert "server-side-fallback-2026-07-01" in captured["beta"]

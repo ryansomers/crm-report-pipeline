@@ -24,7 +24,8 @@ import os
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from pydantic import BaseModel, Field
+import anthropic
+from pydantic import BaseModel, Field, ValidationError
 
 from report.verify import VerificationResult, verify_text
 
@@ -138,11 +139,7 @@ class AnthropicSummarizer:
     """Claude-backed summarizer. The client is injectable for tests."""
 
     def __init__(self, client: Any | None = None, model: str | None = None) -> None:
-        if client is None:
-            import anthropic  # imported lazily so --no-llm never needs it configured
-
-            client = anthropic.Anthropic()
-        self.client = client
+        self.client = client if client is not None else anthropic.Anthropic()
         self.model = model or os.environ.get("LLM_MODEL", DEFAULT_MODEL)
         self.name = f"llm:{self.model}"
 
@@ -153,19 +150,24 @@ class AnthropicSummarizer:
         )
         if feedback:
             content += f"\n\n{feedback}"
-        response = self.client.beta.messages.parse(
-            model=self.model,
-            max_tokens=4000,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": content}],
-            # Structured output: the SDK validates the reply against the model.
-            output_format=WeeklySummary,
-            # Summarising a small JSON object is easy; low effort keeps it cheap and fast.
-            output_config={"effort": "low"},
-            # If a safety classifier declines, retry on a fallback model server-side.
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-        )
+        try:
+            response = self.client.beta.messages.parse(
+                model=self.model,
+                max_tokens=4000,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": content}],
+                # Structured output: the SDK validates the reply against the model.
+                output_format=WeeklySummary,
+                # Summarising a small JSON object is easy; low effort keeps it cheap and fast.
+                output_config={"effort": "low"},
+                # If a safety classifier declines, retry on a fallback model server-side.
+                betas=["server-side-fallback-2026-07-01"],
+                fallbacks="default",
+            )
+        except (anthropic.APIError, ValidationError) as exc:
+            # The SDK has already retried 429/5xx/connection errors (max_retries=2).
+            # Whatever is left is recorded and handled by the template fallback.
+            raise SummaryError(f"{type(exc).__name__}: {exc}") from exc
         if response.stop_reason == "refusal":
             raise SummaryError("model declined to write the summary")
         if response.stop_reason == "max_tokens" or response.parsed_output is None:
